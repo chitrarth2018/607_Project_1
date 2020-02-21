@@ -1,0 +1,88 @@
+---
+title: "Project 1"
+author: "Chitrarth Kaushik"
+date: "2/19/2020"
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+---
+```{r reading the data, eval=TRUE}
+library(stringr)
+tournament <- readLines("https://raw.githubusercontent.com/chitrarth2018/607_Project_1/master/tournamentinfo.txt")
+
+head(tournament)
+
+#replacing dash with empty character
+tourn_wo_dash <- gsub("-", "", tournament)
+head(tourn_wo_dash)
+
+#removing empty rows
+tourn_clean <- tourn_wo_dash[sapply(tourn_wo_dash, nchar) > 0]
+head(tourn_clean)
+
+even_indexes<-seq(2,130,2)
+odd_indexes<-seq(1,129,2)
+player_det1<-tourn_clean[even_indexes]
+player_det2<-tourn_clean[odd_indexes]
+head(player_det1)
+head(player_det2)
+
+#removing 1st row from both the tables
+player_det1<-player_det1[-1]
+player_det2<-player_det2[-1]
+
+#extracting the player name
+player_name<- gsub("\\| ", "", str_extract(player_det2, "\\| (([a-zA-Z])* ){1,}"))
+head(player_name)
+
+#extracting the player state
+player_state<-str_extract(player_det1, "([a-zA-Z]){2}")
+head(player_state)
+
+#creating the data frame
+chess_results<-data.frame(player_name,player_state)
+
+#extracting the player score
+chess_results$player_score<-gsub("\\|","", str_extract(player_det2, "\\|([0-9])\\.([0-9])"))
+
+#extracting the player player pre-rating
+chess_results$pre_rating<- gsub(":","", str_extract(player_det1, ":( )*([0-9])*"))
+
+#counting the number of games played by a player
+chess_results$num_games<-str_count(player_det2, "\\|([a-zA-Z])( )+([0-9]+)")
+
+#extracting the opponent player numbers
+player_opp<-gsub("\\|([a-zA-Z])", "",str_extract_all(player_det2, "\\|([a-zA-Z])( )*([0-9]*)"))
+player_opp<-str_extract_all(player_det2, "\\|([a-zA-Z])( )*([0-9]*)", simplify = TRUE)
+
+#replacing the | and W, B etc.
+for (i in 1:64){
+  
+  player_opp[i,]<-str_replace(player_opp[i,], "\\|([a-zA-Z])", "")
+
+}
+
+
+#accessing the pre-rating of the opponents using the opponent number and the computing the mean pre-rating
+for (i in 1:64){
+
+chess_results$opp_R1[i]<-as.integer(chess_results$pre_rating[as.integer(player_opp[i,1])])
+chess_results$opp_R2[i]<-as.integer(chess_results$pre_rating[as.integer(player_opp[i,2])])
+chess_results$opp_R3[i]<-as.integer(chess_results$pre_rating[as.integer(player_opp[i,3])])
+chess_results$opp_R4[i]<-as.integer(chess_results$pre_rating[as.integer(player_opp[i,4])])
+chess_results$opp_R5[i]<-as.integer(chess_results$pre_rating[as.integer(player_opp[i,5])])
+chess_results$opp_R6[i]<-as.integer(chess_results$pre_rating[as.integer(player_opp[i,6])])
+chess_results$opp_R7[i]<-as.integer(chess_results$pre_rating[as.integer(player_opp[i,7])])
+
+x<-c(chess_results$opp_R1[i],chess_results$opp_R2[i],chess_results$opp_R3[i],     chess_results$opp_R4[i],chess_results$opp_R5[i],chess_results$opp_R6[i],chess_results$opp_R7[i])
+
+chess_results$opp_rate_mean[i]<-round(mean(x, na.rm=TRUE),0)
+
+}
+
+#deleting unwanted columns
+chess_results_final<-chess_results[,c(-5:-12)]
+View(chess_results_final)
+
+```
